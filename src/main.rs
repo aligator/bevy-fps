@@ -1,8 +1,9 @@
-use app::AppPlugin;
 use bevy::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+
+use app::AppPlugin;
 use game::GamePlugin;
 use main_menu::MainMenuPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 pub mod app;
 pub mod game;
