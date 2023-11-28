@@ -32,6 +32,8 @@ impl Plugin for GamePlugin {
 pub struct PlayerBody {
     desired_rotation: Quat,
     desired_velocity: Vec3,
+
+    jump: bool,
 }
 
 #[derive(Component)]
@@ -62,7 +64,7 @@ fn spawn_player(mut commands: Commands) {
 
     // Insert the player mesh
     cmd.insert((
-        TransformBundle::from_transform(Transform::from_xyz(0.0, 0.2, 0.0)),
+        TransformBundle::from_transform(Transform::from_xyz(0.0, 0.01, 0.0)),
         PlayerBody::default()
     )).with_children(|builder| {
         // Attach the camera to the player
@@ -86,7 +88,8 @@ fn spawn_player(mut commands: Commands) {
     cmd.insert(TnuaRapier3dIOBundle::default());
     cmd.insert(TnuaControllerBundle::default());
 
-    // cmd.insert(LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z);
+    // Lock rotation completely, as we rotate manually without physics in first person.
+    cmd.insert(LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z | LockedAxes::ROTATION_LOCKED_Y);
 }
 
 fn apply_controls(
@@ -110,6 +113,8 @@ fn apply_controls(
         }
 
         direction = direction.clamp_length_max(1.0);
+
+        body.jump = keyboard.pressed(KeyCode::Space);
 
         let speed_factor = 2.0;
 
@@ -150,34 +155,23 @@ fn apply_mouse(
 
         body.desired_rotation = new_rotation.rotation;
     }
-    /*
-    // Vertical
-    let rot = cam_tf.rotation;
-
-    // Ensure the vertical rotation is clamped
-    if rot.x > FRAC_2_PI && cumulative.y.is_sign_positive()
-        || rot.x < -FRAC_2_PI && cumulative.y.is_sign_negative()
-    {
-        cumulative.y = 0.0;
-    }
-
-    cam_tf.rotate(Quat::from_scaled_axis(
-        rot * Vec3::X * cumulative.y / 180.0,
-    ));
-
-    // Horizontal
-    let rot = body_tf.rotation;
-    body_tf.rotate(Quat::from_scaled_axis(
-        rot * Vec3::Y * cumulative.x / 180.0,
-    ));*/
 }
 
 fn execute_move(mut player_query: Query<(&mut TnuaController, &mut Transform, &PlayerBody)>) {
     for (mut controller, mut transform, body) in player_query.iter_mut() {
+        if body.jump {
+            controller.action(TnuaBuiltinJump {
+                height: 1.5,
+                fall_extra_gravity: 10.0,
+                ..default()
+            });
+        }
+
         controller.basis(TnuaBuiltinWalk {
+            spring_strengh: 1000.0,
             desired_velocity: body.desired_velocity,
-            desired_forward: Vec3::ZERO,
-            float_height: 0.2,
+            desired_forward: Vec3::ZERO, // Rotation must be instant in FP - not by physics.
+            float_height: 0.45,
             ..default()
         });
         transform.rotation = body.desired_rotation;
