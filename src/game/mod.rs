@@ -4,8 +4,10 @@ use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy_rapier3d::prelude::*;
+use bevy_tnua::builtins::TnuaBuiltinCrouch;
+use bevy_tnua::control_helpers::{TnuaCrouchEnforcer, TnuaCrouchEnforcerPlugin};
 use bevy_tnua::prelude::*;
-use bevy_tnua_rapier3d::{TnuaRapier3dIOBundle, TnuaRapier3dPlugin};
+use bevy_tnua_rapier3d::{TnuaRapier3dIOBundle, TnuaRapier3dPlugin, TnuaRapier3dSensorShape};
 
 use crate::app::AppState;
 
@@ -17,13 +19,13 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
             .add_plugins(RapierDebugRenderPlugin::default())
-            .add_plugins((TnuaRapier3dPlugin, TnuaControllerPlugin))
+            .add_plugins((TnuaRapier3dPlugin, TnuaControllerPlugin, TnuaCrouchEnforcerPlugin))
             .add_systems(OnEnter(AppState::Game), (world::spawn_world, spawn_player))
             .add_systems(Update, (
                 toggle_cursor_lock,
                 apply_controls.before(execute_move),
                 apply_mouse.before(execute_move),
-                execute_move
+                execute_move.in_set(TnuaUserControlsSystemSet),
             ).run_if(in_state(AppState::Game)));
     }
 }
@@ -34,6 +36,7 @@ pub struct PlayerBody {
     desired_velocity: Vec3,
 
     jump: bool,
+    crouch: bool,
 }
 
 #[derive(Component)]
@@ -64,14 +67,14 @@ fn spawn_player(mut commands: Commands) {
 
     // Insert the player mesh
     cmd.insert((
-        TransformBundle::from_transform(Transform::from_xyz(0.0, 0.01, 0.0)),
+        TransformBundle::from_transform(Transform::from_xyz(0.0, 2., 0.0)),
         PlayerBody::default()
     )).with_children(|builder| {
         // Attach the camera to the player
         builder.spawn((
             PlayerCamera {},
             Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 0.7, 0.0),
+                transform: Transform::from_xyz(0.0, 0.4, 0.0),
                 projection: Projection::Perspective(PerspectiveProjection {
                     fov: 90.0 * (std::f32::consts::PI / 180.0),
                     aspect_ratio: 1.0,
@@ -87,6 +90,9 @@ fn spawn_player(mut commands: Commands) {
     cmd.insert(Collider::capsule_y(0.1, 0.1));
     cmd.insert(TnuaRapier3dIOBundle::default());
     cmd.insert(TnuaControllerBundle::default());
+    cmd.insert(TnuaCrouchEnforcer::new(0.5 * Vec3::Y, |cmd| {
+        cmd.insert(TnuaRapier3dSensorShape(Collider::cylinder(0.0, 0.5)));
+    }));
 
     // Lock rotation completely, as we rotate manually without physics in first person.
     cmd.insert(LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z | LockedAxes::ROTATION_LOCKED_Y);
@@ -116,8 +122,13 @@ fn apply_controls(
 
         body.jump = keyboard.pressed(KeyCode::Space);
 
-        let speed_factor = 2.0;
+        let crouch_buttons = [KeyCode::ControlLeft, KeyCode::ControlRight];
+        body.crouch = keyboard.any_pressed(crouch_buttons);
 
+        let mut speed_factor = 3.0;
+        if body.crouch {
+            speed_factor *= 0.2;
+        }
         body.desired_velocity = direction * speed_factor;
     }
 }
@@ -157,14 +168,22 @@ fn apply_mouse(
     }
 }
 
-fn execute_move(mut player_query: Query<(&mut TnuaController, &mut Transform, &PlayerBody)>) {
-    for (mut controller, mut transform, body) in player_query.iter_mut() {
+fn execute_move(mut player_query: Query<(&mut TnuaController, &mut TnuaCrouchEnforcer, &mut Transform, &PlayerBody)>) {
+    for (mut controller, mut crouch_enforcer, mut transform, body) in player_query.iter_mut() {
         if body.jump {
             controller.action(TnuaBuiltinJump {
                 height: 1.5,
                 fall_extra_gravity: 10.0,
                 ..default()
             });
+        }
+
+        if body.crouch {
+            controller.action(crouch_enforcer.enforcing(TnuaBuiltinCrouch {
+                float_offset: -0.2,
+
+                ..default()
+            }));
         }
 
         controller.basis(TnuaBuiltinWalk {

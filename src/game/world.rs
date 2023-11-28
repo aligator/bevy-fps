@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -15,9 +16,9 @@ pub fn spawn_world(
         .spawn(MaterialMeshBundle {
             mesh: meshes.add(shape::Plane::from_size(100.).into()),
             material: materials.add(Color::rgb(0.8, 0.655, 0.317).into()),
-            ..Default::default()
+                ..Default::default()
         })
-        .insert(Collider::cuboid(100., 0., 100.));
+        .insert(Collider::halfspace(Vec3::Y).unwrap());
 
     // map model
     commands
