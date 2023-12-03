@@ -43,8 +43,8 @@ impl Plugin for AppPlugin {
             )
             .add_collection_to_loading_state::<_, MyAssets>(AppState::AssetLoading)
 
-            .insert_resource(editor_controls())
             .add_plugins(EditorPlugin::default())
+            .insert_resource(editor_controls())
 
             // Gltf import
             .add_plugins((

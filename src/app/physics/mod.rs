@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::ColliderMassProperties;
 
 pub use physics_replace_proxies::*;
 
@@ -13,6 +14,7 @@ impl Plugin for PhysicsPlugin {
         app
             .register_type::<AutoAABBCollider>()
             .register_type::<physics_replace_proxies::Collider>()
+            .register_type::<ColliderMassProperties>()
 
             // find a way to make serde's stuff serializable
             // .register_type::<bevy_rapier3d::dynamics::CoefficientCombineRule>()

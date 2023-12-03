@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 // use bevy::render::primitives::Aabb;
 use bevy_rapier3d::geometry::Collider as RapierCollider;
-use bevy_rapier3d::prelude::{ActiveCollisionTypes, ActiveEvents, ComputedColliderShape};
+use bevy_rapier3d::prelude::ComputedColliderShape;
 
 use super::utils::*;
 
@@ -50,7 +50,7 @@ pub fn physics_replace_proxies(
                 rapier_collider = RapierCollider::ball(*radius);
                 commands.entity(entity)
                     .insert(rapier_collider)
-                    // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
+                // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
                 ;
             }
             Collider::Cuboid(size) => {
@@ -58,7 +58,7 @@ pub fn physics_replace_proxies(
                 rapier_collider = RapierCollider::cuboid(size.x, size.y, size.z);
                 commands.entity(entity)
                     .insert(rapier_collider)
-                    // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
+                // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
                 ;
             }
             Collider::Capsule(a, b, radius) => {
@@ -66,7 +66,7 @@ pub fn physics_replace_proxies(
                 rapier_collider = RapierCollider::capsule(*a, *b, *radius);
                 commands.entity(entity)
                     .insert(rapier_collider)
-                    // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
+                // .insert(ActiveEvents::COLLISION_EVENTS)  // FIXME: this is just for demo purposes !!!
                 ;
             }
             Collider::Mesh => {
