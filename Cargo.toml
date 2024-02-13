@@ -10,7 +10,7 @@ edition = "2021"
 bevy = { version = "0.12.0" }
 bevy_rapier3d = { version = "0.23.0", features = ["debug-render-3d"] }
 bevy-inspector-egui = { version = "0.21.0", features = ["default"] }
-bevy-tnua-rapier3d = "0.1.0"
+bevy-tnua-rapier3d = "0.2.0"
 bevy-tnua = "0.13.0"
 bevy_editor_pls = "0.6.0"
 bevy_gltf_components = "0.2.0"
